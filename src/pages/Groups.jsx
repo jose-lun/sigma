@@ -7,7 +7,7 @@ export default function Groups({ user }) {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
- 
+
   useEffect(() => {
     async function fetchGroups() {
       try {

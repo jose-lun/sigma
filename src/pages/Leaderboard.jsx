@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, deleteDoc, updateDoc, arrayRemove } from 'firebase/firestore';
 import { db } from '../firebase';
 import './Leaderboard.css';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   LineChart,
   Line,
@@ -22,30 +22,31 @@ const lineColors = [
 ];
 
 function parseLocalDate(isoDateStr) {
-    const [year, month, day] = isoDateStr.split('-').map(Number);
-    return new Date(year, month - 1, day); // local midnight
-  }
-  
+  const [year, month, day] = isoDateStr.split('-').map(Number);
+  return new Date(year, month - 1, day); // local midnight
+}
+
 
 function getWeekNumber(startDate, currentDate) {
-    const start = getStartOfWeek(startDate, 0);
-    const diff = currentDate - start;
-    const msInWeek = 7 * 24 * 60 * 60 * 1000;
-    return Math.floor(diff / msInWeek) + 1;
-  }  
+  const start = getStartOfWeek(startDate, 0);
+  const diff = currentDate - start;
+  const msInWeek = 7 * 24 * 60 * 60 * 1000;
+  return Math.floor(diff / msInWeek) + 1;
+}
 
 function getStartOfWeek(startDate, weekIndex) {
-    const d = new Date(startDate);
-    const day = d.getDay(); // Sunday = 0, Monday = 1, ...
-    const diffToMonday = (day + 6) % 7; // days to subtract to reach Monday
-    d.setDate(d.getDate() - diffToMonday + (weekIndex * 7));
-    d.setHours(0, 0, 0, 0); // normalize to midnight
-    return d;
-}  
+  const d = new Date(startDate);
+  const day = d.getDay(); // Sunday = 0, Monday = 1, ...
+  const diffToMonday = (day + 6) % 7; // days to subtract to reach Monday
+  d.setDate(d.getDate() - diffToMonday + (weekIndex * 7));
+  d.setHours(0, 0, 0, 0); // normalize to midnight
+  return d;
+}
 
 export default function Leaderboard({ user }) {
   //const [groupId, setGroupId] = useState('');
   const { groupId } = useParams();
+  const navigate = useNavigate();
   const [groupName, setGroupName] = useState('');
   const [groupCreated, setGroupCreated] = useState(null);
   const [members, setMembers] = useState([]);
@@ -56,6 +57,8 @@ export default function Leaderboard({ user }) {
   const [weeklyHistory, setWeeklyHistory] = useState([]);
   const [weekDropdownOpen, setWeekDropdownOpen] = useState(false);
   const [rangeDropdownOpen, setRangeDropdownOpen] = useState(false);
+  const [editingGroupName, setEditingGroupName] = useState(false);
+  const [groupNameDraft, setGroupNameDraft] = useState('');
 
   const weekDropdownRef = useRef();
   const rangeDropdownRef = useRef();
@@ -77,12 +80,13 @@ export default function Leaderboard({ user }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-   useEffect(() => {
+  useEffect(() => {
     const fetchGroupName = async () => {
       if (!groupId) return;
       const groupSnap = await getDoc(doc(db, 'groups', groupId));
       const groupData = groupSnap.data();
       setGroupName(groupData?.name || groupId);
+      setGroupNameDraft(groupData?.name || groupId);
       const created = groupData?.createdAt?.toDate?.() || new Date();
       setGroupCreated(created);
       const current = getWeekNumber(created, new Date());
@@ -97,7 +101,7 @@ export default function Leaderboard({ user }) {
       container.scrollTop = container.scrollHeight;
     }
   }, [weeklyHistory]);
-  
+
 
   useEffect(() => {
     if (!groupId || !groupCreated) return;
@@ -137,18 +141,18 @@ export default function Leaderboard({ user }) {
         weekEnd.setDate(weekEnd.getDate() + 7);
 
         const weeklyScores = Object.fromEntries(
-            Object.entries(rawScores).filter(([dateStr]) => {
-                const d = parseLocalDate(dateStr);
-                return d >= weekStart && d < weekEnd;
-            })
-          );
+          Object.entries(rawScores).filter(([dateStr]) => {
+            const d = parseLocalDate(dateStr);
+            return d >= weekStart && d < weekEnd;
+          })
+        );
 
-          const chartScores = Object.fromEntries(
-            Object.entries(rawScores).filter(([dateStr]) => {
-              const d = parseLocalDate(dateStr);
-              return d >= chartCutoff;
-            })
-          );
+        const chartScores = Object.fromEntries(
+          Object.entries(rawScores).filter(([dateStr]) => {
+            const d = parseLocalDate(dateStr);
+            return d >= chartCutoff;
+          })
+        );
 
         return {
           uid: docSnap.id,
@@ -175,20 +179,20 @@ export default function Leaderboard({ user }) {
         return row;
       });
 
-        const weekStart = getStartOfWeek(groupCreated, weekIndex);
-        const fullWeekDates = Array.from({ length: 7 }, (_, i) => {
-            const d = new Date(weekStart);
-            d.setDate(weekStart.getDate() + i);
-            return d.toISOString().split('T')[0]; // format YYYY-MM-DD
-        });
+      const weekStart = getStartOfWeek(groupCreated, weekIndex);
+      const fullWeekDates = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(weekStart);
+        d.setDate(weekStart.getDate() + i);
+        return d.toISOString().split('T')[0]; // format YYYY-MM-DD
+      });
 
-        const table = fullWeekDates.map(date => {
-            const row = { date };
-            members.forEach(m => {
-                row[m.uid] = m.weeklyScores[date] || 0;
-            });
-            return row;
+      const table = fullWeekDates.map(date => {
+        const row = { date };
+        members.forEach(m => {
+          row[m.uid] = m.weeklyScores[date] || 0;
         });
+        return row;
+      });
 
 
       const weeklyHistory = Array.from({ length: currentWeek }, (_, i) => {
@@ -207,7 +211,7 @@ export default function Leaderboard({ user }) {
     loadMembers();
   }, [groupId, groupCreated, weekIndex, chartRange]);
 
-//   const topScore = Math.max(...members.map(m => m.score));
+  //   const topScore = Math.max(...members.map(m => m.score));
   const colorMap = {};
   members.forEach((m, i) => {
     colorMap[m.uid] = lineColors[i % lineColors.length];
@@ -223,9 +227,93 @@ export default function Leaderboard({ user }) {
   const currentWeek = getWeekNumber(groupCreated, new Date());
   const weekOptions = Array.from({ length: currentWeek }, (_, i) => `${i + 1}`);
 
+  async function handleDeleteGroup() {
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete "${groupName}"? This cannot be undone.`
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      const memberSnap = await getDocs(collection(db, 'groups', groupId, 'members'));
+
+      if (memberSnap.size > 1) {
+        alert('You can only delete a group if you are the only member.');
+        return;
+      }
+
+      const onlyMember = memberSnap.docs[0];
+
+      if (!onlyMember || onlyMember.id !== user.uid) {
+        alert('You can only delete a group that only contains you.');
+        return;
+      }
+
+      await deleteDoc(doc(db, 'groups', groupId, 'members', user.uid));
+      await deleteDoc(doc(db, 'groups', groupId));
+
+      await updateDoc(doc(db, 'users', user.uid), {
+        groups: arrayRemove(groupId)
+      });
+
+      navigate('/survey');
+    } catch (err) {
+      console.error('Failed to delete group:', err);
+      alert('Failed to delete group. Check the console for details.');
+    }
+  }
+
+  async function handleSaveGroupName() {
+    const trimmed = groupNameDraft.trim();
+
+    if (!trimmed) {
+      setGroupNameDraft(groupName);
+      setEditingGroupName(false);
+      return;
+    }
+
+    try {
+      await updateDoc(doc(db, 'groups', groupId), {
+        name: trimmed
+      });
+
+      setGroupName(trimmed);
+      setGroupNameDraft(trimmed);
+      setEditingGroupName(false);
+    } catch (err) {
+      console.error('Failed to rename group:', err);
+      alert('Failed to rename group.');
+    }
+  }
+
   return (
     <div className="leaderboard-wrapper">
-      <h2 className="group-title">{groupName} Leaderboard</h2>
+      <h2 className="group-title">
+        {editingGroupName ? (
+          <input
+            className="group-title-input"
+            value={groupNameDraft}
+            onChange={(e) => setGroupNameDraft(e.target.value)}
+            onBlur={handleSaveGroupName}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSaveGroupName();
+              if (e.key === 'Escape') {
+                setGroupNameDraft(groupName);
+                setEditingGroupName(false);
+              }
+            }}
+            autoFocus
+          />
+        ) : (
+          <span
+            className="editable-group-title"
+            onClick={() => setEditingGroupName(true)}
+            title="Click to rename group"
+          >
+            {groupName} Leaderboard
+          </span>
+        )}
+      </h2>
 
       <div className="leaderboard-header">
         <h3>
@@ -346,13 +434,13 @@ export default function Leaderboard({ user }) {
       <h3 style={{ marginTop: '2rem' }}>Weekly History</h3>
 
       <div className="table-section"
-            style={{
-              maxHeight: '400px',
-              overflowY: 'auto',
-              border: '1px solid #ccc',
-              paddingRight: '4px'
-            }}
-            ref={weeklyTableRef}>
+        style={{
+          maxHeight: '400px',
+          overflowY: 'auto',
+          border: '1px solid #ccc',
+          paddingRight: '4px'
+        }}
+        ref={weeklyTableRef}>
         <table className="score-table">
           <thead>
             <tr>
@@ -382,6 +470,15 @@ export default function Leaderboard({ user }) {
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div style={{ marginTop: '2rem', textAlign: 'center' }}>
+        <button
+          onClick={handleDeleteGroup}
+          className="delete-group-button"
+        >
+          Delete Group
+        </button>
       </div>
 
     </div>

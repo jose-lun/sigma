@@ -2,7 +2,7 @@ import { Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth, db } from './firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { Navigate } from 'react-router-dom';
 import Rubric from './pages/Rubric.jsx';
 import Survey from './pages/Survey.jsx';
@@ -21,9 +21,38 @@ function App() {
   const [userGroups, setUserGroups] = useState([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
+  function subscribeToGroupNames(groupIds) {
+    const unsubscribes = groupIds.map(groupId => {
+      return onSnapshot(doc(db, 'groups', groupId), groupSnap => {
+        setUserGroups(prev => {
+          const name = groupSnap.exists()
+            ? groupSnap.data().name || groupId
+            : groupId;
+
+          const existing = prev.find(g => g.id === groupId);
+
+          if (existing) {
+            return prev.map(g =>
+              g.id === groupId ? { ...g, name } : g
+            );
+          }
+
+          return [...prev, { id: groupId, name }];
+        });
+      });
+    });
+
+    return unsubscribes;
+  }
+
+  let groupUnsubscribes = [];
+
   useEffect(() => {
-    return onAuthStateChanged(auth, async (user) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       setUser(user);
+
+      groupUnsubscribes.forEach(unsub => unsub());
+      groupUnsubscribes = [];
 
       if (user) {
         const userRef = doc(db, 'users', user.uid);
@@ -31,7 +60,8 @@ function App() {
         const userData = userSnap.data() || {};
         const groupIds = userSnap.data()?.groups || [];
 
-        setUserGroups(groupIds);
+        setUserGroups(groupIds.map(id => ({ id, name: id })));
+        groupUnsubscribes = subscribeToGroupNames(groupIds);
 
         for (const groupId of groupIds) {
           try {
@@ -45,8 +75,15 @@ function App() {
             console.error('Failed to sync member for group', groupId, err);
           }
         }
+      } else {
+        setUserGroups([]);
       }
     });
+
+    return () => {
+      unsubscribeAuth();
+      groupUnsubscribes.forEach(unsub => unsub());
+    };
   }, []);
 
   return (
@@ -80,10 +117,10 @@ function App() {
                   minWidth: '150px'
                 }}
               >
-                {userGroups.map(gid => (
-                  <li key={gid}>
+                {userGroups.map(group => (
+                  <li key={group.id}>
                     <Link
-                      to={`/leaderboard/${gid}`}
+                      to={`/leaderboard/${group.id}`}
                       onClick={() => setDropdownOpen(false)}
                       style={{
                         color: 'white',
@@ -92,7 +129,7 @@ function App() {
                         borderRadius: '4px'
                       }}
                     >
-                      {gid}
+                      {group.name}
                     </Link>
                   </li>
                 ))}
