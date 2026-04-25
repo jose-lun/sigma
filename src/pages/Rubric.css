@@ -1,0 +1,280 @@
+/* Rubric.css */
+
+.rubric-wrapper {
+    display: flex;
+    justify-content: center;
+    padding: 1rem;
+  }
+  
+  .rubric-container {
+    width: 100%;
+    padding: 1rem;
+    background-color: transparent
+  }
+  
+  .rubric-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: flex-end;
+    margin-bottom: 10px;
+  }
+
+  .rubric-form > * {
+    flex: 1 1 auto;
+    min-width: 120px;
+  }
+  
+  .rubric-form label {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.9rem;
+    gap: 0.3rem;
+  }
+  
+  .rubric-form input,
+  .rubric-form select {
+    padding: 6px 10px;
+    font-size: 1rem;
+    border-radius: 4px;
+    border: 1px solid #aaa;
+    background: #222;
+    color: #fff;
+  }
+  
+  .rubric-form input[type='range'] {
+    padding: 0;
+  }
+  
+  .rubric-form .importance-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+  
+  .rubric-form button {
+    padding: 10px 16px;
+    background-color: transparent;
+    color: white;
+    border: 2px solid white;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.2s ease-in-out;
+    height: fit-content;
+  }
+  
+  .rubric-form button:hover {
+    background-color: white;
+    color: black;
+  }
+  
+  .habit-card {
+    display: flex;
+    align-items: center;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 0px;
+    color: black;
+    background-color: #d2f8d2;
+    width: 100%;
+  }
+
+  .habit-card.ligma {
+    background-color: #f8d2d2;
+  }
+  
+  .habit-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1 1 auto;
+    min-width: 0;
+    margin-right: 15px;
+  }
+
+  .habit-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0.5rem 1rem;
+    font-weight: bold;
+    color: #ccc;
+    border-bottom: 1px solid #555;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .habit-column.name {
+    width: 140px;
+  }
+  
+  .habit-column.points {
+    width: 80px;
+  }
+  
+  .habit-column.target {
+    width: 100px;
+  }
+  
+  .habit-text {
+    display: inline-block;
+  }
+
+  .habit-text.name {
+    width: 140px;
+  }
+  
+  .habit-text.points {
+    width: 80px;
+  }
+  
+  .habit-text.target {
+    width: 100px;
+  }
+
+  .habit-fields {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  
+  .habit-input {
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid #555;
+    background: #f8f8f8;
+    color: #111;
+    font-size: 0.9rem;
+  }
+  
+  .habit-input.name {
+    width: 140px;
+  }
+  
+  .habit-input.points {
+    width: 80px;
+  }
+  
+  .habit-input.target {
+    width: 100px;
+  }
+  
+
+  .habit-name {
+    font-weight: bold;
+  }
+
+  .habit-points {
+    text-align: right;
+    font-weight: bold;
+    font-size: 0.9rem;
+  }
+
+  .habit-target {
+    text-align: right;
+    font-weight: bold;
+    font-size: 0.9rem;
+    color: #333;
+  }
+  
+  .habit-buttons {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .habit-buttons button {
+    font-weight: bold;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    color: white;
+  }
+  
+  .habit-buttons button:first-child {
+    background-color: black;
+  }
+  
+  .habit-buttons button:last-child {
+    background-color: #e74c3c;
+    color: white;
+  }
+  
+  .importance-field {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .importance-field input[type='range'] {
+    flex: 1;
+    margin: 0;
+  }
+  
+  .importance-value {
+    width: 2ch;
+    text-align: right;
+  }
+
+  .rubric-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .rubric-totals p {
+    margin: 0.25rem 0;
+  }
+
+  .save-button-wrapper {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .save-rubric-button {
+    background-color: #4caf50;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    transition: all 0.3s ease-in-out;
+    border: none;
+    font-weight: bold;
+  }
+  
+  
+  .save-rubric-button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+
+  .save-rubric-button.saved {
+    background-color: #2e7d32;
+  }
+  
+  .tooltip-message {
+    position: absolute;
+    top: 110%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: black;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    z-index: 5;
+  }
+  
+  .save-button-wrapper:hover .tooltip-message {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  
+  
